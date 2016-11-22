@@ -1,5 +1,6 @@
 /.idea/*
 /app/*
+!/app/src/main/*
 /gradle/*
 /.gitignore
 /build.gradle
