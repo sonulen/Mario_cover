@@ -24,7 +24,8 @@ public class renderer_one implements GLSurfaceView.Renderer{
         glViewport(0, 0, width, height);
     }
 
-    //  При  отрисовке/перерисовке кадра GL_COLOR_BUFFER_BIT запоминает цвет (чего?) и перерисовывает соотв.
+    //  При  отрисовке/перерисовке кадра очищаем экранный буфер, задающийся флажком GL_COLOR_BUFFER_BIT, и
+    //  заполняем его цветом, заданным последним вызовом glClearColor(), т.е., красным.
     @Override
     public void onDrawFrame(GL10 gl10) {
         glClear(GL_COLOR_BUFFER_BIT);
