@@ -11,7 +11,7 @@ import android.widget.Toast;
 public class activity_one extends AppCompatActivity {
     //  Переменая с областью отрисовки
     private GLSurfaceView glSurfaceView;
-    //  Флажок для управления
+    //  Флажок
     private boolean rendererSet = false;
 
     @Override

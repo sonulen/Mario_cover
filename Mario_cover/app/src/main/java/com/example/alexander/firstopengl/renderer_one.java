@@ -12,7 +12,7 @@ import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
  * Created by Alexander on 21.11.2016.
  */
 public class renderer_one implements GLSurfaceView.Renderer{
-    //  При создании Surface View ( поверхность отображения ) отчищаем к базовому цвету "Красный" (Red)
+    //  При создании Surface View ( поверхность отображения ) отчищаем к базовому цвету "Красный"
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
         glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
