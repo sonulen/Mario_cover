@@ -1,6 +1,0 @@
-/build/*
-/libs/*
-/src/*
-!/src/main
-/build.gradle
-/proguard-rules.pro
