@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".Activity_one">
+
+    <TextView
+            android:id="@+id/label"
+            android:text="Open GL"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"/>
+
+    <Button
+            android:id="@+id/button_move"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:text="Small Button"/>
+
+    <!--<LinearLayout-->
+            <!--android:id="@+id/game"-->
+            <!--android:layout_below="@id/label"-->
+            <!--android:layout_above="@id/button_move"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="match_parent"-->
+            <!--android:orientation="vertical"/>-->
+    <android.opengl.GLSurfaceView
+            android:layout_below="@id/label"
+            android:layout_above="@id/button_move"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:id="@+id/glSurfaceView"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true" />
+
+</RelativeLayout>
