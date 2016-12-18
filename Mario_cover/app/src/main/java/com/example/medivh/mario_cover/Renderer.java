@@ -4,7 +4,6 @@ import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
-import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -26,13 +25,16 @@ public class Renderer implements GLSurfaceView.Renderer {
     private float[] mModelMatrix = new float[16];
     //
 
-    // Создаем переменные для сдвигов
-    private float x;
-    private float y;
+
     // Размеры экрана
     private static float screenWidth = 2.7f;
-    private static float screenHeight = 1.3f;
+    private static float screenHeight = 1.5f;
     private static int lengthmap = 0;
+    private static int successSlots = 0;
+    // Создаем переменные для сдвигов
+    private float x=0;
+    private float xEarth ;
+    private float y;
 //
     static public int flag;
 // NOVOE
@@ -85,11 +87,11 @@ public class Renderer implements GLSurfaceView.Renderer {
         createViewMatrix();
     }
 
-//  При смене ориентации и начальной загрузки указываем начало т.(-6,0) и длину и высоту отрисовки и задаем матрицу проекций
+//  При смене ориентации и начальной загрузки указываем начало т.(-0,0) и длину и высоту отрисовки и задаем матрицу проекций
     @Override
     public void onSurfaceChanged(GL10 arg0, int width, int height) {
         // Начальная точка отображения
-        GLES20.glViewport(0, 0, (width+(width/10)), (height+(height/10)));
+        GLES20.glViewport(0, 0, (width), height);
 //        ПОСТАВЬ -40 ЧТО ЗА ХУЙНЯ
 //        NOVOE
         createProjectionMatrix(width, height);
@@ -109,20 +111,44 @@ public class Renderer implements GLSurfaceView.Renderer {
         glBindTexture(GL_TEXTURE_2D, textureSky);
         glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 
-        glBindTexture(GL_TEXTURE_2D, textureSky);
+        glBindTexture(GL_TEXTURE_2D, textureSea);
         glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 
-        glBindTexture(GL_TEXTURE_2D, textureEarth);
-        glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
-
-        glBindTexture(GL_TEXTURE_2D, textureMario);
-        Matrix.setIdentityM(mModelMatrix, 0);
-
-        setModelMatrix();
-        bindMatrix();
 
 
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        if ( x < (4*screenWidth/5))
+        {
+            glBindTexture(GL_TEXTURE_2D, textureEarth);
+
+            for ( int i = 0; i < successSlots; i++ ) {
+
+                glDrawArrays(GL_TRIANGLE_STRIP, (12+(i*4)), 4);
+            }
+            Matrix.setIdentityM(mModelMatrix, 0);
+            setModelMatrix();
+            bindMatrix();
+            glBindTexture(GL_TEXTURE_2D, textureMario);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        }
+        else {
+            Matrix.setIdentityM(mModelMatrix, 0);
+            glBindTexture(GL_TEXTURE_2D, textureMario);
+            setModelMatrix();
+            bindMatrix();
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+            glBindTexture(GL_TEXTURE_2D, textureEarth);
+
+            Matrix.setIdentityM(mModelMatrix, 0);
+            setModelMatrixEarth();
+            bindMatrix();
+
+            for ( int i = 0; i < successSlots; i++ ) {
+
+                glDrawArrays(GL_TRIANGLE_STRIP, (12+(i*4)), 4);
+            }
+        }
 
     }
 
@@ -160,55 +186,95 @@ public class Renderer implements GLSurfaceView.Renderer {
 
     private void prepareData() {
 
-        float[] marioTexture = {
-                0.46f, 0.002f, 0.46f, 0.257f, 0.634f, 0.002f, 0.634f, 0.257f,
-        };
-        float[] skyTexture = {
-                0.46f, 0.002f, 0.46f, 0.257f, 0.634f, 0.002f, 0.634f, 0.257f,
-        };
         float[] map = {
                 // где 0
-                0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
                 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
         };
-        lengthmap = map.length;
-        for ( int i = 0; i < lengthmap; i ++ )
+        successSlots = 0;
+        for ( int i = 0; i < map.length; i++ )
         {
-
-
+            if (map[i] != 0) successSlots += 1;
         }
-        // Mario
-        float[] mariocoord = {
-                // Mario
-                -2.0f, 0.3f, 0f,   marioTexture[0], marioTexture[1],       // 0 1 2 3 4
-                -2.0f, -0.3f, 0.0f,  marioTexture[2], marioTexture[3],
-                -1.4f, 0.3f, 0.0f,   marioTexture[4], marioTexture[5],
-                -1.4f, -0.3f, 0.0f,  marioTexture[6], marioTexture[7],
-                // Sky
-                -3.5f, 1.3f, 0,   0, 0,
-                -3.5f, 0, 0,      0, 0.49f,
-                3.5f,  1.3f, 0,   0.49f, 0,
-                3.5f, 0, 0,       0.49f, 0.49f,
-                // Sea
-                -6f, 0, 0,      0.50f, 0,
-                -6f, -4, 0,       0.50f, 0.49f,
-                6, 0, 0,      1, 0,
-                6,-4, 0,        1, 0.49f,
-                // Earth
-                -2.7f, 0, 0,      0.0230547f, 0.644927536f,
-                -2.7f, -0.5f, 0,       0.0230547f, 0.75724637f,
-                -(2.7f*4/5), 0, 0,      0.1123919f, 0.644927536f,
-                -(2.7f*4/5), -0.5f, 0,        0.1123919f, 0.75724637f,
+        lengthmap = map.length;
+        float[] mariocoord = new float[((successSlots+1)*20)+60];
 
+//        final String LOG_TAG = "SuccessSlots - ";
+//        Log.d(LOG_TAG, Float.toString(successSlots));
+        successSlots = 0;
+
+        float[] mariocoordMISSCLICK = {
+                // Mario
+                -screenWidth, 0f, 0f,   0.46f, 0.002f,       // 0 1 2 3 4
+                -screenWidth, -(screenHeight/3), 0.0f,  0.46f, 0.257f, // 5 6 7 8 9
+                -(screenWidth*4/5), 0, 0.0f,   0.634f, 0.002f, // 10 11 12 13 14
+                -(screenWidth*4/5), -(screenHeight/3), 0.0f,  0.634f, 0.257f, // 15 16 17 18 19
+                // Sky
+                -screenWidth, screenHeight, 0,   0, 0, // 20 21 22 23 24
+                -screenWidth, -(screenHeight/3), 0,      0, 0.49f, // 25 26 27 28 29
+                (screenWidth),  screenHeight, 0,   0.49f, 0,  // 30 31 32 33 34
+                (screenWidth), -(screenHeight/3), 0,       0.49f, 0.49f, // 35 36 37 38 39
+                // Sea
+                -screenWidth, -screenHeight, 0,      0.50f, 0, // 40 41 42 43 44
+                -screenWidth, -(screenHeight/3), 0,       0.50f, 0.49f, // 45 46 47 48 49
+                (screenWidth), -screenHeight, 0,      1, 0, // 50 51 52 53 54
+                (screenWidth), -(screenHeight/3), 0,        1, 0.49f, // 55 56 57 58 59
         };
-        final String LOG_TAG = "myLogs";
-        Log.d(LOG_TAG, Float.toString(mariocoord[4]));
+
+        for ( int i = 0; i < 60; i ++)
+        {
+            mariocoord[i]=mariocoordMISSCLICK[i];
+        }
+        // переменная что бы нарисовать верхнюю половину и потом вернуться к началу координат и нарисовать нижнюю
+        int halfCompleted = 0;
+        // Высота относительно 00 где мы рисуем левл ( верхняя грянь)
+        float nowHeight = 0;
+        for ( int i = 0; i < lengthmap ; i ++ )
+        {
+            if (map[i] != 0) {
+
+                //Log.d("В цикле +++++", Float.toString(successSlots));
+
+                if (i >= lengthmap / 2) {
+                    halfCompleted = i - lengthmap / 2;
+                    // Высота относительно 00 где мы рисуем левл ( верхняя грянь)
+                    nowHeight = -screenHeight/3;
+                } else {
+                    halfCompleted = i;
+                }
+                mariocoord[60 + (successSlots * 20)] = (-screenWidth + (screenWidth / 5) * halfCompleted);
+                mariocoord[61 + (successSlots * 20)] = nowHeight;
+                mariocoord[62 + (successSlots * 20)] = 0;
+                mariocoord[63 + (successSlots * 20)] = 0.0230547f;
+                mariocoord[64 + (successSlots * 20)] = 0.644927536f;
+
+                mariocoord[65 + (successSlots * 20)] = (-screenWidth + (screenWidth / 5) * halfCompleted);
+                mariocoord[66 + (successSlots * 20)] = nowHeight-screenHeight/3;
+                mariocoord[67 + (successSlots * 20)] = 0;
+                mariocoord[68 + (successSlots * 20)] = 0.0230547f;
+                mariocoord[69 + (successSlots * 20)] = 0.75724637f;
+
+                mariocoord[70 + (successSlots * 20)] = (-screenWidth * 4 / 5 + (screenWidth / 5) * halfCompleted);
+                mariocoord[71 + (successSlots * 20)] = nowHeight;
+                mariocoord[72 + (successSlots * 20)] = 0;
+                mariocoord[73 + (successSlots * 20)] = 0.1123919f;
+                mariocoord[74 + (successSlots * 20)] = 0.644927536f;
+
+                mariocoord[75 + (successSlots * 20)] = (-screenWidth * 4 / 5 + (screenWidth / 5) * halfCompleted);
+                mariocoord[76 + (successSlots * 20)] = nowHeight-screenHeight/3;
+                mariocoord[77 + (successSlots * 20)] = 0;
+                mariocoord[78 + (successSlots * 20)] = 0.1123919f;
+                mariocoord[79 + (successSlots * 20)] = 0.75724637f;
+
+                successSlots = successSlots + 1;
+            }
+        }
+
         marioData = ByteBuffer
                 .allocateDirect(mariocoord.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         marioData.put(mariocoord);
-        Log.d(LOG_TAG, Float.toString(mariocoord[4]));
         textureMario = TextureUtils.loadTexture(context, R.drawable.texture);
         textureSky = TextureUtils.loadTexture(context, R.drawable.texture2);
         textureSea = TextureUtils.loadTexture(context, R.drawable.texture2);
@@ -261,21 +327,45 @@ public class Renderer implements GLSurfaceView.Renderer {
         //Matrix.translateM(mModelMatrixNEW, 0, 1, 0, 0);
         //В переменной angle угол будет меняться  от 0 до 360 каждые 10 секунд.
 
-        if ( flag == 1 ) {
-            if (x <= 3.4f) {
-                x = (float) (x + 0.1);
-
-            } else {
-                x = 0;
-            }
+        if ( flag == 1 && x < (4*screenWidth/5) ) {
+            x = (float) (x + 0.1);
+            xEarth = -x;
         }
+        if ( xEarth >= -(4*screenWidth/5 + 0.1) && flag == -1 && x > 0) {
+            x = (float) (x - 0.1);
+        }
+
             //void rotateM (float[] m,  int mOffset, float a,float x, float y, float z)
             //Rotates matrix m in place by angle a (in degrees) around the axis (x, y, z).
             Matrix.translateM(mModelMatrixNEW, 0, x, 0, 0);
     }
 
+    private void setModelMatrixEarth() {
+/**        Метод translateM настраивает матрицу на перемещение.  В нем мы указываем model матрицу и нулевой отступ.
+ Последние три параметра – это значение смещения соответственно по осям X, Y и Z. Мы задаем смещение по оси X, на 1.
+ Т.к. камера смотрит на изображение с оси Z, то сместив треугольник по оси X на 1, мы получим смещение вправо. */
+        //Matrix.translateM(mModelMatrixNEW, 0, 1, 0, 0);
+        //В переменной angle угол будет меняться  от 0 до 360 каждые 10 секунд.
+
+        if ( flag == 1 ) {
+                xEarth = (float) (xEarth - 0.1);
+        }
+        if ( flag == -1 && xEarth < -(4*screenWidth/5 + 0.1) ) {
+            xEarth = (float) (xEarth + 0.1);
+        }
+
+
+        //void rotateM (float[] m,  int mOffset, float a,float x, float y, float z)
+        //Rotates matrix m in place by angle a (in degrees) around the axis (x, y, z).
+        Matrix.translateM(mModelMatrixNEW, 0, xEarth, 0, 0);
+    }
+
     static public void Move() {
         flag = 1;
+    }
+
+    static public void MoveBack() {
+        flag = -1;
     }
     static public void Stop() {
         flag = 0;

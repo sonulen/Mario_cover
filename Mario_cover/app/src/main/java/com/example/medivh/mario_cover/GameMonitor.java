@@ -63,6 +63,22 @@ public class GameMonitor extends AppCompatActivity {
         });
     }
 
+    public void moveBackMove(View view) {
+        Button button = (Button) findViewById(R.id.button_move_back);
+        button.setOnTouchListener(new View.OnTouchListener(){
+            public boolean onTouch( View b , MotionEvent theMotion ) {
+                switch ( theMotion.getAction() ) {
+                    case MotionEvent.ACTION_DOWN:
+                        Renderer.MoveBack();
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        Renderer.Stop();
+                        break;
+                }
+                return true;
+            }
+        });
+    }
 
 
 // Konec

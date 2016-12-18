@@ -39,5 +39,16 @@
             android:layout_alignParentTop="true"
             android:layout_alignParentLeft="true" android:layout_alignParentStart="true"
             android:layout_alignParentRight="true" android:layout_alignParentEnd="true"/>
+    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Move back beatch"
+            android:id="@+id/button_move_back"
+            android:layout_alignBottom="@+id/button_move"
+            android:onClick="moveBackMove"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginLeft="27dp"
+            android:layout_marginStart="27dp"/>
 
 </RelativeLayout>
