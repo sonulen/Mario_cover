@@ -19,12 +19,18 @@ import static android.opengl.GLES20.*;
 
 public class Renderer implements GLSurfaceView.Renderer {
 
+
+
     private Context context;
     // Создаем матрицу проекций относительно камеры. почему 16?!
     // Создаем матрицу модели
     private float[] mModelMatrix = new float[16];
-    //
-
+    // Karta
+    private static float[] map = {
+        // где 0 пустота
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    };
 
     // Размеры экрана
     private static float screenWidth = 2.7f;
@@ -32,11 +38,17 @@ public class Renderer implements GLSurfaceView.Renderer {
     private static int lengthmap = 0;
     private static int successSlots = 0;
     // Создаем переменные для сдвигов
-    private float x=0;
+    private static float x=0;
     private float xEarth ;
-    private float y;
+    private float y=0;
+    private float MarioPositionX = 0;
+    private float MarioPositionY = 0;
+    private static float xSpeed = (float) 0.00;
+    private float ySpeed = (float) 0.00;
 //
     static public int flag;
+    static public int flagUP;
+
 // NOVOE
     private FloatBuffer marioData;
     private int textureMario;
@@ -78,7 +90,6 @@ public class Renderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
         // Задаем начальный цвет и очищаем бэкграунд
         GLES20.glClearColor(0f, 1f, 1f, 1.0f);
-
 //      NOVOE
         createAndUseProgram();
         getLocations();
@@ -104,7 +115,6 @@ public class Renderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl10) {
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         Matrix.setIdentityM(mModelMatrixNEW, 0);
         bindMatrix();
 
@@ -115,10 +125,9 @@ public class Renderer implements GLSurfaceView.Renderer {
         glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 
 
-
-
         if ( x < (4*screenWidth/5))
         {
+
             glBindTexture(GL_TEXTURE_2D, textureEarth);
 
             for ( int i = 0; i < successSlots; i++ ) {
@@ -186,11 +195,7 @@ public class Renderer implements GLSurfaceView.Renderer {
 
     private void prepareData() {
 
-        float[] map = {
-                // где 0
-                0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-        };
+
         successSlots = 0;
         for ( int i = 0; i < map.length; i++ )
         {
@@ -200,7 +205,8 @@ public class Renderer implements GLSurfaceView.Renderer {
         float[] mariocoord = new float[((successSlots+1)*20)+60];
 
 //        final String LOG_TAG = "SuccessSlots - ";
-//        Log.d(LOG_TAG, Float.toString(successSlots));
+
+ //       Log.d("Заход в PrepareData #", "1234");
         successSlots = 0;
 
         float[] mariocoordMISSCLICK = {
@@ -279,6 +285,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         textureSky = TextureUtils.loadTexture(context, R.drawable.texture2);
         textureSea = TextureUtils.loadTexture(context, R.drawable.texture2);
         textureEarth = TextureUtils.loadTexture(context, R.drawable.texture);
+
     }
 
 
@@ -326,18 +333,39 @@ public class Renderer implements GLSurfaceView.Renderer {
         Т.к. камера смотрит на изображение с оси Z, то сместив треугольник по оси X на 1, мы получим смещение вправо. */
         //Matrix.translateM(mModelMatrixNEW, 0, 1, 0, 0);
         //В переменной angle угол будет меняться  от 0 до 360 каждые 10 секунд.
+        if (canIMove(MarioPositionX,0)) {
+            if (flag == 1 && x >= 0 && x < (4 * screenWidth / 5)) {
+                if (xSpeed < 0.07) xSpeed += 0.01;
+            }
+            if (flag == 0 && x >= 0 && x < (4 * screenWidth / 5)) {
+                if (xSpeed > 0) xSpeed -= 0.003;
+                if (xSpeed > 0 && xSpeed < 0.003) xSpeed = 0;
+                if (xSpeed < 0 && xSpeed > -0.003) xSpeed = 0;
+                if (xSpeed < 0) xSpeed += 0.003;
+            }
+            if (flag == -1 && x >= 0.1 && x < (4 * screenWidth / 5)) {
+                if (xSpeed > -0.07) xSpeed -= 0.005;
+            }
+            if (xSpeed < 0 && x < 0.1) xSpeed = 0;
+            if (xSpeed != 0 && x >= 0 && x < (4 * screenWidth / 5)) {
+                x = x + xSpeed;
+                MarioPositionX += xSpeed;
+            }
+            if (x >= (4 * screenWidth / 5) && xEarth < (4 * screenWidth / 5)) {
+                //Log.d("приравнили xEarth=x:", Float.toString(x));
+                xEarth = x;
+            }
 
-        if ( flag == 1 && x < (4*screenWidth/5) ) {
-            x = (float) (x + 0.1);
-            xEarth = -x;
         }
-        if ( xEarth >= -(4*screenWidth/5 + 0.1) && flag == -1 && x > 0) {
-            x = (float) (x - 0.1);
-        }
-
+        else xSpeed = 0;
+//            if ( xSpeed != 0 && x >= 0 && x < (4*screenWidth/5)  ) {
+//                x = x + xSpeed;
+//                MarioPositionX -= xSpeed;
+//                xEarth = -x;
+//            }
             //void rotateM (float[] m,  int mOffset, float a,float x, float y, float z)
             //Rotates matrix m in place by angle a (in degrees) around the axis (x, y, z).
-            Matrix.translateM(mModelMatrixNEW, 0, x, 0, 0);
+        Matrix.translateM(mModelMatrixNEW, 0, x, 0, 0);
     }
 
     private void setModelMatrixEarth() {
@@ -346,18 +374,43 @@ public class Renderer implements GLSurfaceView.Renderer {
  Т.к. камера смотрит на изображение с оси Z, то сместив треугольник по оси X на 1, мы получим смещение вправо. */
         //Matrix.translateM(mModelMatrixNEW, 0, 1, 0, 0);
         //В переменной angle угол будет меняться  от 0 до 360 каждые 10 секунд.
+        if (canIMove(MarioPositionX,0)) {
+            if (flag == 1 && xEarth < (lengthmap - 2) * screenWidth / 10 && x >= (4 * screenWidth / 5)) {
+                if (xSpeed < 0.07) xSpeed += 0.01;
+            }
+            if (flag == 0 && xEarth < (lengthmap - 2) * screenWidth / 10) {
+                if (xSpeed > 0) xSpeed -= 0.003;
+                if (xSpeed > 0 && xSpeed < 0.003) xSpeed = 0;
+                if (xSpeed < 0) xSpeed += 0.003;
+                if (xSpeed < 0 && xSpeed > -0.003) xSpeed = 0;
+            }
+            if (flag == -1 && xEarth > x) {
+                if (xSpeed > -0.07) xSpeed -= 0.005;
+            }
+            if (xSpeed != 0 && xEarth < (lengthmap - 2) * screenWidth / 10 && xEarth >= x) {
+                xEarth = xEarth + xSpeed;
+                MarioPositionX += xSpeed;
 
-        if ( flag == 1 ) {
-                xEarth = (float) (xEarth - 0.1);
+            }
+            if (xSpeed < 0 && xEarth <= x) x = xEarth;
+            if (xEarth >= (lengthmap - 2) * screenWidth / 10) {
+                // Konec
+            }
         }
-        if ( flag == -1 && xEarth < -(4*screenWidth/5 + 0.1) ) {
-            xEarth = (float) (xEarth + 0.1);
-        }
+        else xSpeed = 0;
+//        if ( flag == 1 ) {
+//                xEarth = (float) (xEarth - xSpeed);
+//            MarioPositionX += -(xEarth);
+//            //Log.d("MarioPositionX из Earth", Float.toString(MarioPositionX));
+//        }
+//        if ( flag == -1 && xEarth < -(4*screenWidth/5 + xSpeed) ) {
+//            xEarth = (float) (xEarth + xSpeed);
+//            MarioPositionX -= -(xEarth);
+//            Log.d("MarioPositionX из Earth", Float.toString(MarioPositionX));
+//        }
+        //Matrix.setLookAtM(mViewMatrixNEW, 0, -xEarth, 0, 1.5f, -xEarth, 0, -5.0f, 0, 1, 0);
 
-
-        //void rotateM (float[] m,  int mOffset, float a,float x, float y, float z)
-        //Rotates matrix m in place by angle a (in degrees) around the axis (x, y, z).
-        Matrix.translateM(mModelMatrixNEW, 0, xEarth, 0, 0);
+        Matrix.translateM(mModelMatrixNEW, 0, -xEarth, 0, 0);
     }
 
     static public void Move() {
@@ -375,6 +428,37 @@ public class Renderer implements GLSurfaceView.Renderer {
     public static void TakeSize(int width, int height) {
         //screenWidth = width;
         //screenHeight = height;
+    }
+
+    public static void MoveUp() {
+            flagUP = 1;
+    }
+
+    static boolean canIMove (float Mariox, float y) {
+        int slotx=0 ;
+        int check1 = (int) ((Mariox) / (screenWidth/5));
+        int check2 = (int) ((Mariox + screenWidth/10) / (screenWidth/5));
+
+            slotx = (int) (((Mariox) / (screenWidth/5)));
+
+        boolean allOk = false;
+        if ( map[lengthmap/2 + slotx] == 1) {
+            allOk = true;
+        }
+        else {
+            if ( check1 != check2 ) {
+                if (map[lengthmap/2 + slotx + 1] == 1) {
+                    allOk = true;
+                }
+            }
+        }
+        if ( map[slotx+1] == 1 && xSpeed >= 0 && flag !=-1) {
+            allOk = false;
+        }
+        if ( slotx > 0 && map[slotx-1] == 1 && xSpeed <= 0 && flag !=1) {
+            allOk = false;
+        }
+        return allOk;
     }
 }
 

@@ -80,6 +80,27 @@ public class GameMonitor extends AppCompatActivity {
         });
     }
 
+    public void JumpMove(View view) {
+        Button button = (Button) findViewById(R.id.JumpMario);
+        button.setOnTouchListener(new View.OnTouchListener(){
+            public boolean onTouch( View b , MotionEvent theMotion ) {
+                switch ( theMotion.getAction() ) {
+                    case MotionEvent.ACTION_DOWN:
+                        Renderer.MoveUp();
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        Renderer.Stop();
+                        break;
+                }
+                return true;
+            }
+        });
+    }
+
+
+
+
+
 
 // Konec
 }
