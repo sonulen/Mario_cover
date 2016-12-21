@@ -96,7 +96,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         x = MarioPositionX;
         xSpeed = 0;
         endGame = 0;
-       // createRandomMap();
+        createRandomMap();
         // Задаем начальный цвет и очищаем бэкграунд
         GLES20.glClearColor(0f, 1f, 1f, 1.0f);
 //      NOVOE
