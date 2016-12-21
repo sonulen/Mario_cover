@@ -14,6 +14,7 @@ public class Activity_one extends AppCompatActivity {
 
 //  Флажок
     private boolean rendererSet = false;
+    // Для сетевого взаимодействия
 
 
     @Override
@@ -34,6 +35,10 @@ public class Activity_one extends AppCompatActivity {
         if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE){
             setRequestedOrientation (ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
+
+        //https://vk.com/doc18053558_440093360 - 2 файл с авторами
+        new ReadInBackground("https://vk.com/doc18053558_440093360").execute();
+
         setContentView(R.layout.activity_one_land);
     }
 
@@ -44,4 +49,9 @@ public class Activity_one extends AppCompatActivity {
 
     }
 
+    public void Info(View view) {
+        String info = "";
+        info = ReadInBackground.getInfo();
+        Toast.makeText(getApplicationContext(), info, Toast.LENGTH_SHORT).show();
+    }
 }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -28,7 +29,7 @@ public class Renderer implements GLSurfaceView.Renderer {
     // Karta
     private static float[] map = {
         // где 0 пустота
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
     };
 
@@ -39,15 +40,15 @@ public class Renderer implements GLSurfaceView.Renderer {
     private static int successSlots = 0;
     // Создаем переменные для сдвигов
     private static float x=0;
-    private float xEarth ;
-    private float y=0;
     private float MarioPositionX = 0;
-    private float MarioPositionY = 0;
+    private static float MarioPositionY = 0;
     private static float xSpeed = (float) 0.00;
-    private float ySpeed = (float) 0.00;
+    private static float ySpeed = (float) 0.00;
+    public static float dY = (float) 0.00;
 //
     static public int flag;
     static public int flagUP;
+    static public int endGame = 0;
 
 // NOVOE
     private FloatBuffer marioData;
@@ -55,7 +56,6 @@ public class Renderer implements GLSurfaceView.Renderer {
     private int textureSky;
     private int textureSea;
     private int textureEarth;
-    private float[] mMatrix = new float[16];
     private int uMatrixLocation;
     private int programId;
 
@@ -84,10 +84,16 @@ public class Renderer implements GLSurfaceView.Renderer {
     public Renderer(Context context) {
         this.context = context;
     }
-    
+
 //  При создании Surface View ( поверхность отображения ) отчищаем к базовому цвету "Красный"
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
+        MarioPositionY = 0;
+        MarioPositionX = -(4/5)* screenWidth;
+        ySpeed = 0;
+        x = MarioPositionX;
+        xSpeed = 0;
+        endGame = 0;
         // Задаем начальный цвет и очищаем бэкграунд
         GLES20.glClearColor(0f, 1f, 1f, 1.0f);
 //      NOVOE
@@ -109,7 +115,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         bindMatrix();
     }
 
-//  При  отрисовке/перерисовке кадра очищаем экранный буфер, задающийся флажком GL_COLOR_BUFFER_BIT, и 
+//  При  отрисовке/перерисовке кадра очищаем экранный буфер, задающийся флажком GL_COLOR_BUFFER_BIT, и
 //  заполняем его цветом, заданным последним вызовом glClearColor(), т.е., красным.
     @Override
     public void onDrawFrame(GL10 gl10) {
@@ -125,38 +131,31 @@ public class Renderer implements GLSurfaceView.Renderer {
         glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 
 
-        if ( x < (4*screenWidth/5))
-        {
-
-            glBindTexture(GL_TEXTURE_2D, textureEarth);
-
-            for ( int i = 0; i < successSlots; i++ ) {
-
-                glDrawArrays(GL_TRIANGLE_STRIP, (12+(i*4)), 4);
-            }
-            Matrix.setIdentityM(mModelMatrix, 0);
-            setModelMatrix();
-            bindMatrix();
-            glBindTexture(GL_TEXTURE_2D, textureMario);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindTexture(GL_TEXTURE_2D, textureEarth);
+        for ( int i = 0; i < successSlots; i++ ) {
+            glDrawArrays(GL_TRIANGLE_STRIP, (12+(i*4)), 4);
         }
-        else {
+
+        if ( xSpeed > 0) textureMario = TextureUtils.loadTexture(context, R.drawable.move);
+        if ( xSpeed < 0) textureMario = TextureUtils.loadTexture(context, R.drawable.moveback);
+        if ( xSpeed == 0) textureMario = TextureUtils.loadTexture(context, R.drawable.stop);
+
+        if ( flagUP == 1 ) {
+            if ( xSpeed >= 0) textureMario = TextureUtils.loadTexture(context, R.drawable.jump);
+            if ( xSpeed < 0) textureMario = TextureUtils.loadTexture(context, R.drawable.jumpback);
+        }
+
+        glBindTexture(GL_TEXTURE_2D, textureMario);
+        if ( x < (4 * screenWidth / 5)) {
             Matrix.setIdentityM(mModelMatrix, 0);
-            glBindTexture(GL_TEXTURE_2D, textureMario);
-            setModelMatrix();
+            MarioMoveWithoutCamera();
             bindMatrix();
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-            glBindTexture(GL_TEXTURE_2D, textureEarth);
-
+        } else {
             Matrix.setIdentityM(mModelMatrix, 0);
-            setModelMatrixEarth();
+            MarioMoveWithCamera();
             bindMatrix();
-
-            for ( int i = 0; i < successSlots; i++ ) {
-
-                glDrawArrays(GL_TRIANGLE_STRIP, (12+(i*4)), 4);
-            }
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
 
     }
@@ -208,29 +207,32 @@ public class Renderer implements GLSurfaceView.Renderer {
 
  //       Log.d("Заход в PrepareData #", "1234");
         successSlots = 0;
-
+        int skylenth = lengthmap / 20;
+        skylenth = skylenth + 1;
         float[] mariocoordMISSCLICK = {
                 // Mario
-                -screenWidth, 0f, 0f,   0.46f, 0.002f,       // 0 1 2 3 4
-                -screenWidth, -(screenHeight/3), 0.0f,  0.46f, 0.257f, // 5 6 7 8 9
-                -(screenWidth*4/5), 0, 0.0f,   0.634f, 0.002f, // 10 11 12 13 14
-                -(screenWidth*4/5), -(screenHeight/3), 0.0f,  0.634f, 0.257f, // 15 16 17 18 19
+                -screenWidth, 0f, 0f,   0.1f, 0f,       // 0 1 2 3 4
+                -screenWidth, -(screenHeight/3), 0.0f,  0f, 1f, // 5 6 7 8 9
+                -(screenWidth*4/5), 0, 0.0f,   1f, 0f, // 10 11 12 13 14
+                -(screenWidth*4/5), -(screenHeight/3), 0.0f,  1f, 1f, // 15 16 17 18 19
                 // Sky
                 -screenWidth, screenHeight, 0,   0, 0, // 20 21 22 23 24
-                -screenWidth, -(screenHeight/3), 0,      0, 0.49f, // 25 26 27 28 29
-                (screenWidth),  screenHeight, 0,   0.49f, 0,  // 30 31 32 33 34
-                (screenWidth), -(screenHeight/3), 0,       0.49f, 0.49f, // 35 36 37 38 39
+                -screenWidth, -(screenHeight/3), 0,      0, 1f, // 25 26 27 28 29
+                (screenWidth*2*skylenth),  screenHeight, 0,   1f, 0,  // 30 31 32 33 34
+                (screenWidth*2*skylenth), -(screenHeight/3), 0,       1f, 1f, // 35 36 37 38 39
                 // Sea
-                -screenWidth, -screenHeight, 0,      0.50f, 0, // 40 41 42 43 44
-                -screenWidth, -(screenHeight/3), 0,       0.50f, 0.49f, // 45 46 47 48 49
-                (screenWidth), -screenHeight, 0,      1, 0, // 50 51 52 53 54
-                (screenWidth), -(screenHeight/3), 0,        1, 0.49f, // 55 56 57 58 59
+                -screenWidth, -screenHeight, 0,      0, 0, // 40 41 42 43 44
+                -screenWidth, -(screenHeight/3), 0,       0, 1f, // 45 46 47 48 49
+                (screenWidth*2*skylenth), -screenHeight, 0,      1, 0, // 50 51 52 53 54
+                (screenWidth*2*skylenth), -(screenHeight/3), 0,        1, 1f, // 55 56 57 58 59
         };
+
 
         for ( int i = 0; i < 60; i ++)
         {
             mariocoord[i]=mariocoordMISSCLICK[i];
         }
+
         // переменная что бы нарисовать верхнюю половину и потом вернуться к началу координат и нарисовать нижнюю
         int halfCompleted = 0;
         // Высота относительно 00 где мы рисуем левл ( верхняя грянь)
@@ -281,9 +283,9 @@ public class Renderer implements GLSurfaceView.Renderer {
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         marioData.put(mariocoord);
-        textureMario = TextureUtils.loadTexture(context, R.drawable.texture);
-        textureSky = TextureUtils.loadTexture(context, R.drawable.texture2);
-        textureSea = TextureUtils.loadTexture(context, R.drawable.texture2);
+        textureMario = TextureUtils.loadTexture(context, R.drawable.stop);
+        textureSky = TextureUtils.loadTexture(context, R.drawable.nebonebo);
+        textureSea = TextureUtils.loadTexture(context, R.drawable.seasea);
         textureEarth = TextureUtils.loadTexture(context, R.drawable.texture);
 
     }
@@ -327,90 +329,130 @@ public class Renderer implements GLSurfaceView.Renderer {
         Matrix.setLookAtM(mViewMatrixNEW, 0, eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ);
     }
 
-    private void setModelMatrix() {
-/**        Метод translateM настраивает матрицу на перемещение.  В нем мы указываем model матрицу и нулевой отступ.
-        Последние три параметра – это значение смещения соответственно по осям X, Y и Z. Мы задаем смещение по оси X, на 1.
-        Т.к. камера смотрит на изображение с оси Z, то сместив треугольник по оси X на 1, мы получим смещение вправо. */
-        //Matrix.translateM(mModelMatrixNEW, 0, 1, 0, 0);
-        //В переменной angle угол будет меняться  от 0 до 360 каждые 10 секунд.
-        if (canIMove(MarioPositionX,0)) {
-            if (flag == 1 && x >= 0 && x < (4 * screenWidth / 5)) {
+
+    private void MarioMoveWithoutCamera() {
+
+
+        if (canIMoveX(MarioPositionX) && endGame == 0) {
+            if (flag == 1) {
                 if (xSpeed < 0.07) xSpeed += 0.01;
             }
-            if (flag == 0 && x >= 0 && x < (4 * screenWidth / 5)) {
+            if (flag == -1 && x >= 0.02 ) {
+                if (xSpeed > -0.07) xSpeed -= 0.005;
+            }
+            if (xSpeed < 0 && x < 0.2) xSpeed = 0;
+            if (flag == 0) {
                 if (xSpeed > 0) xSpeed -= 0.003;
                 if (xSpeed > 0 && xSpeed < 0.003) xSpeed = 0;
                 if (xSpeed < 0 && xSpeed > -0.003) xSpeed = 0;
                 if (xSpeed < 0) xSpeed += 0.003;
+                if ( x < xSpeed ) xSpeed = 0;
             }
-            if (flag == -1 && x >= 0.1 && x < (4 * screenWidth / 5)) {
-                if (xSpeed > -0.07) xSpeed -= 0.005;
-            }
-            if (xSpeed < 0 && x < 0.1) xSpeed = 0;
-            if (xSpeed != 0 && x >= 0 && x < (4 * screenWidth / 5)) {
+            if (xSpeed != 0 ) {
                 x = x + xSpeed;
                 MarioPositionX += xSpeed;
             }
-            if (x >= (4 * screenWidth / 5) && xEarth < (4 * screenWidth / 5)) {
-                //Log.d("приравнили xEarth=x:", Float.toString(x));
-                xEarth = x;
-            }
-
+            MoveY();
         }
-        else xSpeed = 0;
-//            if ( xSpeed != 0 && x >= 0 && x < (4*screenWidth/5)  ) {
-//                x = x + xSpeed;
-//                MarioPositionX -= xSpeed;
-//                xEarth = -x;
-//            }
-            //void rotateM (float[] m,  int mOffset, float a,float x, float y, float z)
-            //Rotates matrix m in place by angle a (in degrees) around the axis (x, y, z).
-        Matrix.translateM(mModelMatrixNEW, 0, x, 0, 0);
+        else {
+            xSpeed = 0;
+        }
+
+        Log.d("xSpeed:", Float.toString(xSpeed));
+        Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
     }
 
-    private void setModelMatrixEarth() {
-/**        Метод translateM настраивает матрицу на перемещение.  В нем мы указываем model матрицу и нулевой отступ.
- Последние три параметра – это значение смещения соответственно по осям X, Y и Z. Мы задаем смещение по оси X, на 1.
- Т.к. камера смотрит на изображение с оси Z, то сместив треугольник по оси X на 1, мы получим смещение вправо. */
-        //Matrix.translateM(mModelMatrixNEW, 0, 1, 0, 0);
-        //В переменной angle угол будет меняться  от 0 до 360 каждые 10 секунд.
-        if (canIMove(MarioPositionX,0)) {
-            if (flag == 1 && xEarth < (lengthmap - 2) * screenWidth / 10 && x >= (4 * screenWidth / 5)) {
-                if (xSpeed < 0.07) xSpeed += 0.01;
-            }
-            if (flag == 0 && xEarth < (lengthmap - 2) * screenWidth / 10) {
-                if (xSpeed > 0) xSpeed -= 0.003;
-                if (xSpeed > 0 && xSpeed < 0.003) xSpeed = 0;
-                if (xSpeed < 0) xSpeed += 0.003;
-                if (xSpeed < 0 && xSpeed > -0.003) xSpeed = 0;
-            }
-            if (flag == -1 && xEarth > x) {
-                if (xSpeed > -0.07) xSpeed -= 0.005;
-            }
-            if (xSpeed != 0 && xEarth < (lengthmap - 2) * screenWidth / 10 && xEarth >= x) {
-                xEarth = xEarth + xSpeed;
-                MarioPositionX += xSpeed;
-
-            }
-            if (xSpeed < 0 && xEarth <= x) x = xEarth;
-            if (xEarth >= (lengthmap - 2) * screenWidth / 10) {
-                // Konec
+    private void MarioMoveWithCamera() {
+        boolean canI = true;
+        if ( endGame == 0) {
+            changeXspeed(flag);
+            changeYspeed(flagUP);
+            if (fallingMario()) {
+                canI = canIMoveX(MarioPositionX);
             }
         }
-        else xSpeed = 0;
-//        if ( flag == 1 ) {
-//                xEarth = (float) (xEarth - xSpeed);
-//            MarioPositionX += -(xEarth);
-//            //Log.d("MarioPositionX из Earth", Float.toString(MarioPositionX));
-//        }
-//        if ( flag == -1 && xEarth < -(4*screenWidth/5 + xSpeed) ) {
-//            xEarth = (float) (xEarth + xSpeed);
-//            MarioPositionX -= -(xEarth);
-//            Log.d("MarioPositionX из Earth", Float.toString(MarioPositionX));
-//        }
-        //Matrix.setLookAtM(mViewMatrixNEW, 0, -xEarth, 0, 1.5f, -xEarth, 0, -5.0f, 0, 1, 0);
+        MarioPositionY += ySpeed;
+        if ( canI ) {
+            x = x + xSpeed;
+            MarioPositionX += xSpeed;
+        }
+        Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
+        Matrix.setLookAtM(mViewMatrixNEW, 0, x-(4 * screenWidth / 5), 0, 1.5f, x-(4 * screenWidth / 5), 0, -5.0f, 0, 1, 0);
+    }
 
-        Matrix.translateM(mModelMatrixNEW, 0, -xEarth, 0, 0);
+    public void changeXspeed ( int flag ) {
+        if (flag == 1 ) {
+            if (xSpeed < 0.07) xSpeed += 0.01;
+        }
+        if (flag == -1 ) {
+            if (xSpeed > -0.07) xSpeed -= 0.005;
+        }
+
+        if (flag == 0) {
+            if (xSpeed > 0) xSpeed -= 0.001;
+            if (xSpeed > 0 && xSpeed < 0.001) xSpeed = 0;
+            if (xSpeed < 0 && xSpeed > -0.001) xSpeed = 0;
+            if (xSpeed < 0) xSpeed += 0.001;
+        }
+    }
+
+    public void changeYspeed ( int flagUP ) {
+        if ( flagUP == 1) {
+            if (ySpeed == 0) ySpeed = 0.05f;
+            if ( (MarioPositionY - dY) >= screenHeight/2)  {
+                ySpeed = -0.05f;
+                flagUP = 0;
+            }
+        }
+        if ( flagUP == 0) {
+            if ( ySpeed != 0) ySpeed = -0.05f;
+        }
+        if ( Math.abs(MarioPositionY - dY) < 0.05f && ySpeed < 0) {
+            MarioPositionY = dY;
+            ySpeed = 0;
+        }
+    }
+
+    public boolean fallingMario () {
+        float Mariox = MarioPositionX;
+        if ( xSpeed > 0) Mariox = Mariox + screenWidth/6;
+        if ( xSpeed < 0) Mariox = Mariox - screenWidth/6;
+        int slotx= 0;
+        int level = 0;
+        int check1 = (int) ((Mariox) / (screenWidth/5));
+        int check2 = (int) ((Mariox + screenWidth*1/40) / (screenWidth/5));
+        int check3 = (int) ((Mariox - screenWidth*1/40) / (screenWidth/5));
+
+        if ( check2 != check1 ) slotx = check2;
+        else {
+            if (check3 != check1) {
+                slotx = check3;
+            } else slotx = check1;
+        }
+
+
+        if ( MarioPositionY >= 0 && MarioPositionY < screenHeight/3) level = 1;
+        if ( MarioPositionY >= screenHeight/3 ) level = 2;
+
+        if ( level == 1) {
+            if ( map[slotx + map.length/2] == 0 && ySpeed <= 0) {
+                ySpeed = -0.05f;
+                xSpeed = 0f;
+                endGame = 1;
+                return false;
+            }
+        }
+        if ( level == 2) {
+            if ( map[slotx] == 0 && ySpeed <= 0) {
+                ySpeed = -0.05f;
+                return false;
+            }
+            if ( map[slotx] == 1 && MarioPositionY >= screenHeight/3 && MarioPositionY <= (screenHeight/3+0.01f) ) {
+                ySpeed = 0f;
+                return false;
+            }
+        }
+        return true;
     }
 
     static public void Move() {
@@ -431,34 +473,108 @@ public class Renderer implements GLSurfaceView.Renderer {
     }
 
     public static void MoveUp() {
-            flagUP = 1;
+        if ( flagUP == 0 && ySpeed == 0 && (MarioPositionY - dY) < 0.01f) dY = MarioPositionY;
+        flagUP = 1;
     }
 
-    static boolean canIMove (float Mariox, float y) {
-        int slotx=0 ;
+    public static void StopUp() {
+            flagUP = 0;
+    }
+
+    static boolean canIMoveX (float Mariox) {
+        if ( xSpeed < 0) Mariox = Mariox + screenWidth/6;
+        int slotx= 0;
+        int level = 0;
         int check1 = (int) ((Mariox) / (screenWidth/5));
-        int check2 = (int) ((Mariox + screenWidth/10) / (screenWidth/5));
+        int check2 = (int) ((Mariox + screenWidth*1/40) / (screenWidth/5));
 
-            slotx = (int) (((Mariox) / (screenWidth/5)));
+        if ( check2 != check1 ) slotx = check2;
+        else slotx = check1;
 
-        boolean allOk = false;
-        if ( map[lengthmap/2 + slotx] == 1) {
-            allOk = true;
-        }
-        else {
-            if ( check1 != check2 ) {
-                if (map[lengthmap/2 + slotx + 1] == 1) {
-                    allOk = true;
+
+        if ( MarioPositionY >= 0 && MarioPositionY < screenHeight/3) level = 1;
+        if ( MarioPositionY >= screenHeight/3 ) level = 2;
+
+        if ( level == 1) {
+            if ( map[slotx+1] == 1 && xSpeed >= 0) {
+                return false;
+            }
+            if ( slotx > 0) {
+                if (map[slotx - 1] == 1 && xSpeed <= 0) {
+                    return false;
                 }
             }
         }
-        if ( map[slotx+1] == 1 && xSpeed >= 0 && flag !=-1) {
-            allOk = false;
-        }
-        if ( slotx > 0 && map[slotx-1] == 1 && xSpeed <= 0 && flag !=1) {
-            allOk = false;
-        }
-        return allOk;
+
+        return true;
     }
+
+    boolean canIMoveY () {
+
+        int slotx=0 ;
+        int check1 = (int) ((MarioPositionX) / (screenWidth/5));
+        int check2 = (int) ((MarioPositionX + screenWidth/10) / (screenWidth/5));
+
+        slotx = (int) (((MarioPositionX) / (screenWidth/5)));
+        if ( ySpeed > 0 ) return true;
+        if ( ySpeed < 0) {
+            if (MarioPositionY >= screenHeight / 3) {
+                if (MarioPositionY > screenHeight / 3) {
+                    if (map[slotx] == 1) {
+                        return true;
+                    }
+                }
+                if (MarioPositionY == screenHeight / 3) {
+                    if (map[slotx] == 1) {
+                        return false;
+                    }
+                }
+            } else {
+                if (MarioPositionY > 0) {
+                    if (map[lengthmap / 2 + slotx] == 1) {
+                        return true;
+                    }
+                }
+                if (MarioPositionY == 0) {
+                    if (map[lengthmap / 2 + slotx] == 1) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    void MoveY () {
+
+        if (canIMoveY()) {
+
+            if (flagUP == 1) {
+                // Вот здесь на сколько прыжок
+                if (((MarioPositionY - dY) == 0) && ySpeed != 0) {
+                    flagUP = 0;
+                }
+                if ((MarioPositionY - dY < (screenHeight / 2)) && ySpeed >= 0) {
+                    ySpeed = 0.05f;
+                } else {
+                    if ((MarioPositionY - dY) != 0) {
+                        ySpeed = -0.05f;
+                    }
+                    if ((MarioPositionY - dY) <= 0.05f) {
+                        ySpeed = 0;
+                    }
+                }
+            }
+            if (flagUP == 0) {
+                if ((MarioPositionY - dY) != 0 && ySpeed > 0) ySpeed = -0.05f;
+                if ((MarioPositionY - dY) == 0 || (MarioPositionY - dY) <= 0.05f) {
+                    ySpeed = 0;
+                    MarioPositionY = dY;
+                }
+            }
+            MarioPositionY += ySpeed;
+        }
+    }
+
 }
 

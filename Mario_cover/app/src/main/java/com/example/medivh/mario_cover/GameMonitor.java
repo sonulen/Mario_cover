@@ -89,7 +89,7 @@ public class GameMonitor extends AppCompatActivity {
                         Renderer.MoveUp();
                         break;
                     case MotionEvent.ACTION_UP:
-                        Renderer.Stop();
+                        Renderer.StopUp();
                         break;
                 }
                 return true;
