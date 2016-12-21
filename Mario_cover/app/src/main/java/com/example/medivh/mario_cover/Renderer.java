@@ -11,6 +11,7 @@ import javax.microedition.khronos.opengles.GL10;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.Random;
 
 import static android.opengl.GLES20.*;
 
@@ -27,10 +28,10 @@ public class Renderer implements GLSurfaceView.Renderer {
     // Создаем матрицу модели
     private float[] mModelMatrix = new float[16];
     // Karta
-    private static float[] map = {
+    protected static float[] map = {
         // где 0 пустота
-        0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+        0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
     };
 
     // Размеры экрана
@@ -56,6 +57,7 @@ public class Renderer implements GLSurfaceView.Renderer {
     private int textureSky;
     private int textureSea;
     private int textureEarth;
+    private int textureFlag;
     private int uMatrixLocation;
     private int programId;
 
@@ -94,6 +96,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         x = MarioPositionX;
         xSpeed = 0;
         endGame = 0;
+       // createRandomMap();
         // Задаем начальный цвет и очищаем бэкграунд
         GLES20.glClearColor(0f, 1f, 1f, 1.0f);
 //      NOVOE
@@ -104,7 +107,22 @@ public class Renderer implements GLSurfaceView.Renderer {
         createViewMatrix();
     }
 
-//  При смене ориентации и начальной загрузки указываем начало т.(-0,0) и длину и высоту отрисовки и задаем матрицу проекций
+    private void createRandomMap() {
+        Random randNumber = new Random();
+        for ( int i = 0; i < 30; i ++) {
+            int j = randNumber.nextInt(map.length);
+            if ( j > 5 && j < (map.length/2 - 5) ) {
+                map [j] = randNumber.nextInt(1);
+            }
+            if ( j > (map.length/2 + 5) && j < (map.length - 5)){
+                if ( map[j+1] == 1 && map[j-1] == 1) {
+                    map[j] = randNumber.nextInt(1);
+                }
+            }
+        }
+    }
+
+    //  При смене ориентации и начальной загрузки указываем начало т.(-0,0) и длину и высоту отрисовки и задаем матрицу проекций
     @Override
     public void onSurfaceChanged(GL10 arg0, int width, int height) {
         // Начальная точка отображения
@@ -130,10 +148,12 @@ public class Renderer implements GLSurfaceView.Renderer {
         glBindTexture(GL_TEXTURE_2D, textureSea);
         glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 
+        glBindTexture(GL_TEXTURE_2D, textureFlag);
+        glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
 
         glBindTexture(GL_TEXTURE_2D, textureEarth);
         for ( int i = 0; i < successSlots; i++ ) {
-            glDrawArrays(GL_TRIANGLE_STRIP, (12+(i*4)), 4);
+            glDrawArrays(GL_TRIANGLE_STRIP, (16+(i*4)), 4);
         }
 
         if ( xSpeed > 0) textureMario = TextureUtils.loadTexture(context, R.drawable.move);
@@ -216,23 +236,27 @@ public class Renderer implements GLSurfaceView.Renderer {
                 -(screenWidth*4/5), 0, 0.0f,   1f, 0f, // 10 11 12 13 14
                 -(screenWidth*4/5), -(screenHeight/3), 0.0f,  1f, 1f, // 15 16 17 18 19
                 // Sky
-                -screenWidth, screenHeight, 0,   0, 0, // 20 21 22 23 24
-                -screenWidth, -(screenHeight/3), 0,      0, 1f, // 25 26 27 28 29
+                -screenWidth-0.2f, screenHeight, 0,   0, 0, // 20 21 22 23 24
+                -screenWidth-0.2f, -(screenHeight/3), 0,      0, 1f, // 25 26 27 28 29
                 (screenWidth*2*skylenth),  screenHeight, 0,   1f, 0,  // 30 31 32 33 34
                 (screenWidth*2*skylenth), -(screenHeight/3), 0,       1f, 1f, // 35 36 37 38 39
                 // Sea
-                -screenWidth, -screenHeight, 0,      0, 0, // 40 41 42 43 44
-                -screenWidth, -(screenHeight/3), 0,       0, 1f, // 45 46 47 48 49
+                -screenWidth-0.2f, -screenHeight, 0,      0, 0, // 40 41 42 43 44
+                -screenWidth-0.2f, -(screenHeight/3), 0,       0, 1f, // 45 46 47 48 49
                 (screenWidth*2*skylenth), -screenHeight, 0,      1, 0, // 50 51 52 53 54
                 (screenWidth*2*skylenth), -(screenHeight/3), 0,        1, 1f, // 55 56 57 58 59
+                // Flag
+                (screenWidth/5)*((map.length/2)-7), screenHeight/3, 0, 0,0,     /// 60 61 62 63 64
+                (screenWidth/5)*((map.length/2)-7), -screenHeight/3, 0, 0, 1f,
+                (screenWidth/5)*((map.length/2)-6), screenHeight/3, 0, 1f, 0,
+                (screenWidth/5)*((map.length/2)-6), -screenHeight/3, 0, 1f,1f, // 75 76 77 78 79
         };
 
 
-        for ( int i = 0; i < 60; i ++)
+        for ( int i = 0; i < 80; i ++)
         {
             mariocoord[i]=mariocoordMISSCLICK[i];
         }
-
         // переменная что бы нарисовать верхнюю половину и потом вернуться к началу координат и нарисовать нижнюю
         int halfCompleted = 0;
         // Высота относительно 00 где мы рисуем левл ( верхняя грянь)
@@ -250,29 +274,29 @@ public class Renderer implements GLSurfaceView.Renderer {
                 } else {
                     halfCompleted = i;
                 }
-                mariocoord[60 + (successSlots * 20)] = (-screenWidth + (screenWidth / 5) * halfCompleted);
-                mariocoord[61 + (successSlots * 20)] = nowHeight;
-                mariocoord[62 + (successSlots * 20)] = 0;
-                mariocoord[63 + (successSlots * 20)] = 0.0230547f;
-                mariocoord[64 + (successSlots * 20)] = 0.644927536f;
+                mariocoord[80 + (successSlots * 20)] = (-screenWidth + (screenWidth / 5) * halfCompleted);
+                mariocoord[81 + (successSlots * 20)] = nowHeight;
+                mariocoord[82 + (successSlots * 20)] = 0;
+                mariocoord[83 + (successSlots * 20)] = 0.0230547f;
+                mariocoord[84 + (successSlots * 20)] = 0.644927536f;
 
-                mariocoord[65 + (successSlots * 20)] = (-screenWidth + (screenWidth / 5) * halfCompleted);
-                mariocoord[66 + (successSlots * 20)] = nowHeight-screenHeight/3;
-                mariocoord[67 + (successSlots * 20)] = 0;
-                mariocoord[68 + (successSlots * 20)] = 0.0230547f;
-                mariocoord[69 + (successSlots * 20)] = 0.75724637f;
+                mariocoord[85 + (successSlots * 20)] = (-screenWidth + (screenWidth / 5) * halfCompleted);
+                mariocoord[86 + (successSlots * 20)] = nowHeight-screenHeight/3;
+                mariocoord[87 + (successSlots * 20)] = 0;
+                mariocoord[88 + (successSlots * 20)] = 0.0230547f;
+                mariocoord[89 + (successSlots * 20)] = 0.75724637f;
 
-                mariocoord[70 + (successSlots * 20)] = (-screenWidth * 4 / 5 + (screenWidth / 5) * halfCompleted);
-                mariocoord[71 + (successSlots * 20)] = nowHeight;
-                mariocoord[72 + (successSlots * 20)] = 0;
-                mariocoord[73 + (successSlots * 20)] = 0.1123919f;
-                mariocoord[74 + (successSlots * 20)] = 0.644927536f;
+                mariocoord[90 + (successSlots * 20)] = (-screenWidth * 4 / 5 + (screenWidth / 5) * halfCompleted);
+                mariocoord[91 + (successSlots * 20)] = nowHeight;
+                mariocoord[92 + (successSlots * 20)] = 0;
+                mariocoord[93 + (successSlots * 20)] = 0.1123919f;
+                mariocoord[94 + (successSlots * 20)] = 0.644927536f;
 
-                mariocoord[75 + (successSlots * 20)] = (-screenWidth * 4 / 5 + (screenWidth / 5) * halfCompleted);
-                mariocoord[76 + (successSlots * 20)] = nowHeight-screenHeight/3;
-                mariocoord[77 + (successSlots * 20)] = 0;
-                mariocoord[78 + (successSlots * 20)] = 0.1123919f;
-                mariocoord[79 + (successSlots * 20)] = 0.75724637f;
+                mariocoord[95 + (successSlots * 20)] = (-screenWidth * 4 / 5 + (screenWidth / 5) * halfCompleted);
+                mariocoord[96 + (successSlots * 20)] = nowHeight-screenHeight/3;
+                mariocoord[97 + (successSlots * 20)] = 0;
+                mariocoord[98 + (successSlots * 20)] = 0.1123919f;
+                mariocoord[99 + (successSlots * 20)] = 0.75724637f;
 
                 successSlots = successSlots + 1;
             }
@@ -287,6 +311,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         textureSky = TextureUtils.loadTexture(context, R.drawable.nebonebo);
         textureSea = TextureUtils.loadTexture(context, R.drawable.seasea);
         textureEarth = TextureUtils.loadTexture(context, R.drawable.texture);
+        textureFlag = TextureUtils.loadTexture(context, R.drawable.flag);
 
     }
 
@@ -332,37 +357,6 @@ public class Renderer implements GLSurfaceView.Renderer {
 
     private void MarioMoveWithoutCamera() {
 
-
-        if (canIMoveX(MarioPositionX) && endGame == 0) {
-            if (flag == 1) {
-                if (xSpeed < 0.07) xSpeed += 0.01;
-            }
-            if (flag == -1 && x >= 0.02 ) {
-                if (xSpeed > -0.07) xSpeed -= 0.005;
-            }
-            if (xSpeed < 0 && x < 0.2) xSpeed = 0;
-            if (flag == 0) {
-                if (xSpeed > 0) xSpeed -= 0.003;
-                if (xSpeed > 0 && xSpeed < 0.003) xSpeed = 0;
-                if (xSpeed < 0 && xSpeed > -0.003) xSpeed = 0;
-                if (xSpeed < 0) xSpeed += 0.003;
-                if ( x < xSpeed ) xSpeed = 0;
-            }
-            if (xSpeed != 0 ) {
-                x = x + xSpeed;
-                MarioPositionX += xSpeed;
-            }
-            MoveY();
-        }
-        else {
-            xSpeed = 0;
-        }
-
-        Log.d("xSpeed:", Float.toString(xSpeed));
-        Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
-    }
-
-    private void MarioMoveWithCamera() {
         boolean canI = true;
         if ( endGame == 0) {
             changeXspeed(flag);
@@ -370,17 +364,55 @@ public class Renderer implements GLSurfaceView.Renderer {
             if (fallingMario()) {
                 canI = canIMoveX(MarioPositionX);
             }
+            MarioPositionY += ySpeed;
+            if (canI) {
+                x = x + xSpeed;
+                MarioPositionX += xSpeed;
+            }
+            Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
         }
-        MarioPositionY += ySpeed;
-        if ( canI ) {
+        if ( endGame == 1) {
+            MarioPositionY += ySpeed;
             x = x + xSpeed;
             MarioPositionX += xSpeed;
+            Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
         }
-        Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
-        Matrix.setLookAtM(mViewMatrixNEW, 0, x-(4 * screenWidth / 5), 0, 1.5f, x-(4 * screenWidth / 5), 0, -5.0f, 0, 1, 0);
+        if ( endGame == 2){
+            // Congrac
+        }
+    }
+
+    private void MarioMoveWithCamera() {
+        // endGame = 1 это мы упали а 2 это мы прошли левл
+        boolean canI = true;
+        if ( endGame == 0) {
+            changeXspeed(flag);
+            changeYspeed(flagUP);
+            if (fallingMario()) {
+                canI = canIMoveX(MarioPositionX);
+            }
+            MarioPositionY += ySpeed;
+            if (canI) {
+                x = x + xSpeed;
+                MarioPositionX += xSpeed;
+            }
+            Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
+            Matrix.setLookAtM(mViewMatrixNEW, 0, x - (4 * screenWidth / 5), 0, 1.5f, x - (4 * screenWidth / 5), 0, -5.0f, 0, 1, 0);
+        }
+        if ( endGame == 1) {
+            MarioPositionY += ySpeed;
+            x = x + xSpeed;
+            MarioPositionX += xSpeed;
+            Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
+            Matrix.setLookAtM(mViewMatrixNEW, 0, x - (4 * screenWidth / 5), 0, 1.5f, x - (4 * screenWidth / 5), 0, -5.0f, 0, 1, 0);
+        }
+        if ( endGame == 2){
+            // Congrac
+        }
     }
 
     public void changeXspeed ( int flag ) {
+
         if (flag == 1 ) {
             if (xSpeed < 0.07) xSpeed += 0.01;
         }
@@ -415,24 +447,27 @@ public class Renderer implements GLSurfaceView.Renderer {
 
     public boolean fallingMario () {
         float Mariox = MarioPositionX;
-        if ( xSpeed > 0) Mariox = Mariox + screenWidth/6;
-        if ( xSpeed < 0) Mariox = Mariox - screenWidth/6;
-        int slotx= 0;
+
+        int slotx= (int) ((Mariox + screenWidth/10) / (screenWidth/5));;
         int level = 0;
-        int check1 = (int) ((Mariox) / (screenWidth/5));
-        int check2 = (int) ((Mariox + screenWidth*1/40) / (screenWidth/5));
-        int check3 = (int) ((Mariox - screenWidth*1/40) / (screenWidth/5));
+        int check1 = (int) ((Mariox + screenWidth*1/40) / (screenWidth/5));
+        int check2 = (int) ((Mariox - screenWidth*1/40 + screenWidth/5) / (screenWidth/5));
 
-        if ( check2 != check1 ) slotx = check2;
-        else {
-            if (check3 != check1) {
-                slotx = check3;
-            } else slotx = check1;
+
+        Log.d("check1:", Float.toString(check1));
+        Log.d("check2:", Float.toString(check2));
+        // Было screenHeight/3
+        if ( MarioPositionY >= 0 && MarioPositionY < screenHeight/9) {
+            level = 1;
+            if ( xSpeed >= 0 && map[check1 + map.length/2] == 1 ) slotx = check1;
+            if ( xSpeed < 0 && map[check2 + map.length/2] == 1) slotx = check2;
         }
-
-
-        if ( MarioPositionY >= 0 && MarioPositionY < screenHeight/3) level = 1;
-        if ( MarioPositionY >= screenHeight/3 ) level = 2;
+        if ( MarioPositionY >= screenHeight/9 ) {
+            level = 2;
+            if ( xSpeed >= 0 && map[check1] == 1 ) slotx = check1;
+            if ( xSpeed < 0 && map[check2] == 1) slotx = check2;
+        }
+        Log.d("slotx:", Float.toString(slotx));
 
         if ( level == 1) {
             if ( map[slotx + map.length/2] == 0 && ySpeed <= 0) {
@@ -452,6 +487,8 @@ public class Renderer implements GLSurfaceView.Renderer {
                 return false;
             }
         }
+        Log.d("ySpeed:", Float.toString(ySpeed));
+        Log.d("xSpeed:", Float.toString(xSpeed));
         return true;
     }
 
@@ -467,10 +504,7 @@ public class Renderer implements GLSurfaceView.Renderer {
     }
 
 
-    public static void TakeSize(int width, int height) {
-        //screenWidth = width;
-        //screenHeight = height;
-    }
+
 
     public static void MoveUp() {
         if ( flagUP == 0 && ySpeed == 0 && (MarioPositionY - dY) < 0.01f) dY = MarioPositionY;
@@ -488,12 +522,14 @@ public class Renderer implements GLSurfaceView.Renderer {
         int check1 = (int) ((Mariox) / (screenWidth/5));
         int check2 = (int) ((Mariox + screenWidth*1/40) / (screenWidth/5));
 
+        if ( check2 == (map.length/2)-2) endGame = 2;
         if ( check2 != check1 ) slotx = check2;
         else slotx = check1;
 
 
         if ( MarioPositionY >= 0 && MarioPositionY < screenHeight/3) level = 1;
         if ( MarioPositionY >= screenHeight/3 ) level = 2;
+        if ( Mariox < screenWidth/5 && xSpeed < 0) return false;
 
         if ( level == 1) {
             if ( map[slotx+1] == 1 && xSpeed >= 0) {
@@ -506,75 +542,13 @@ public class Renderer implements GLSurfaceView.Renderer {
             }
         }
 
+
         return true;
     }
 
-    boolean canIMoveY () {
 
-        int slotx=0 ;
-        int check1 = (int) ((MarioPositionX) / (screenWidth/5));
-        int check2 = (int) ((MarioPositionX + screenWidth/10) / (screenWidth/5));
 
-        slotx = (int) (((MarioPositionX) / (screenWidth/5)));
-        if ( ySpeed > 0 ) return true;
-        if ( ySpeed < 0) {
-            if (MarioPositionY >= screenHeight / 3) {
-                if (MarioPositionY > screenHeight / 3) {
-                    if (map[slotx] == 1) {
-                        return true;
-                    }
-                }
-                if (MarioPositionY == screenHeight / 3) {
-                    if (map[slotx] == 1) {
-                        return false;
-                    }
-                }
-            } else {
-                if (MarioPositionY > 0) {
-                    if (map[lengthmap / 2 + slotx] == 1) {
-                        return true;
-                    }
-                }
-                if (MarioPositionY == 0) {
-                    if (map[lengthmap / 2 + slotx] == 1) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
 
-    void MoveY () {
-
-        if (canIMoveY()) {
-
-            if (flagUP == 1) {
-                // Вот здесь на сколько прыжок
-                if (((MarioPositionY - dY) == 0) && ySpeed != 0) {
-                    flagUP = 0;
-                }
-                if ((MarioPositionY - dY < (screenHeight / 2)) && ySpeed >= 0) {
-                    ySpeed = 0.05f;
-                } else {
-                    if ((MarioPositionY - dY) != 0) {
-                        ySpeed = -0.05f;
-                    }
-                    if ((MarioPositionY - dY) <= 0.05f) {
-                        ySpeed = 0;
-                    }
-                }
-            }
-            if (flagUP == 0) {
-                if ((MarioPositionY - dY) != 0 && ySpeed > 0) ySpeed = -0.05f;
-                if ((MarioPositionY - dY) == 0 || (MarioPositionY - dY) <= 0.05f) {
-                    ySpeed = 0;
-                    MarioPositionY = dY;
-                }
-            }
-            MarioPositionY += ySpeed;
-        }
-    }
 
 }
 

@@ -17,6 +17,8 @@ public class GameMonitor extends AppCompatActivity {
 
     //  Переменая с областью отрисовки
     GLSurfaceView glSurfaceView;
+    // Флаг событий
+    static int EventIden;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,9 +40,9 @@ public class GameMonitor extends AppCompatActivity {
             Display display = getWindowManager().getDefaultDisplay();
             Point size = new Point();
             display.getSize(size);
-            int width = size.x;
-            int height = size.y;
-            Renderer.TakeSize(width,height);
+            //int width = size.x;
+            //int height = size.y;
+            //Renderer.TakeSize(width,height);
         } else {
             Toast.makeText(this, "This device does not support OpenGL ES 2.0.", Toast.LENGTH_LONG).show(); return;
         }
@@ -97,8 +99,15 @@ public class GameMonitor extends AppCompatActivity {
         });
     }
 
+    public void getFlags(int flag) {
 
 
+    }
+
+
+    public void RestartUp(View view) {
+
+    }
 
 
 
