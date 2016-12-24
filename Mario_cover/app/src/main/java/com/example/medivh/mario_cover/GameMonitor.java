@@ -4,11 +4,10 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ConfigurationInfo;
-import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Display;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -20,17 +19,16 @@ public class GameMonitor extends AppCompatActivity {
     GLSurfaceView glSurfaceView = null;
     Renderer ourRender = null;
     Button ControlButton = null;
-    // Флаг событий
-    int EventIden;
     // Обработчик событий
-    //eventsHandler GameMaster;
     eventsHandler handler;
-
     final int STATUS_NONE = 0;
-
+    final int STATUS_OFF = 9;
+    final int STATUS_START = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+//        final MediaPlayer clicksound = MediaPlayer.create(this, R.raw.smb_jump_small);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.game);
         // Убираем полосу названия приложения
@@ -42,23 +40,70 @@ public class GameMonitor extends AppCompatActivity {
         final ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
         final boolean supportsEs2 = configurationInfo.reqGlEsVersion >= 0x20000;
         if (supportsEs2) {
-
             handler = new eventsHandler(this,(Button) findViewById(R.id.finalbutton));
-            handler.handlerRules.sendEmptyMessage(0);
+            handler.handlerRules.sendEmptyMessage(STATUS_NONE);
             // Если прошло проверку на версию то запускаем наш класс отрисовки Renderer()
             glSurfaceView.setEGLContextClientVersion(2);
             ourRender = new Renderer(this, handler);
             glSurfaceView.setRenderer(ourRender);
 
-            Display display = getWindowManager().getDefaultDisplay();
-            Point size = new Point();
-            display.getSize(size);
-            //int width = size.x;
-            //int height = size.y;
-            //Renderer.TakeSize(width,height);
         } else {
             Toast.makeText(this, "This device does not support OpenGL ES 2.0.", Toast.LENGTH_LONG).show(); return;
         }
+    }
+
+    protected void onDestroy() {
+        handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+        super.onDestroy();
+    }
+
+    protected void onStop() {
+        handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+        super.onStop();
+    }
+
+    protected void onPause() {
+        handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+        super.onPause();
+    }
+
+    protected void onResume() {
+        handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+        super.onResume();
+    }
+
+    protected void onSaveInstanceState(Bundle outState) {
+        handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onUserLeaveHint() {
+        handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+        super.onUserLeaveHint();
+    }
+
+    @Override
+    public void onBackPressed() {
+        handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+         super.onBackPressed();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // TODO Auto-generated method stub
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_MENU:
+                handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+                return true;
+            case KeyEvent.KEYCODE_SEARCH:
+                handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+                return true;
+            case KeyEvent.KEYCODE_BACK:
+                handler.handlerRules.sendEmptyMessage(STATUS_OFF);
+                return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     public void moveMariomove(View view) {

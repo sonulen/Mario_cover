@@ -38,7 +38,7 @@ public class Renderer implements GLSurfaceView.Renderer {
     protected float[] map = {
         // где 0 пустота
         0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
     };
 
     // Размеры экрана
@@ -57,6 +57,7 @@ public class Renderer implements GLSurfaceView.Renderer {
     public int flag;
     public int flagUP;
     public int endGame = 0;
+    public boolean FlagBump = false;
 
 // NOVOE
     private FloatBuffer marioData;
@@ -148,6 +149,7 @@ public class Renderer implements GLSurfaceView.Renderer {
 
 //  При  отрисовке/перерисовке кадра очищаем экранный буфер, задающийся флажком GL_COLOR_BUFFER_BIT, и
 //  заполняем его цветом, заданным последним вызовом glClearColor(), т.е., красным.
+
     @Override
     public void onDrawFrame(GL10 gl10) {
 
@@ -553,16 +555,24 @@ public class Renderer implements GLSurfaceView.Renderer {
 
         if ( level == 1) {
             if ( map[slotx+1] == 1 && xSpeed >= 0) {
-                handler.handlerRules.sendEmptyMessage(STATUS_BUMP);
+                if ( !FlagBump ) {
+                    handler.handlerRules.sendEmptyMessage(STATUS_BUMP);
+                }
+                FlagBump = true;
                 return false;
             }
             if ( slotx > 0) {
                 if (map[slotx - 1] == 1 && xSpeed <= 0) {
-                    handler.handlerRules.sendEmptyMessage(STATUS_BUMP);
+                    if ( !FlagBump ) {
+                        handler.handlerRules.sendEmptyMessage(STATUS_BUMP);
+                    }
+                    FlagBump = true;
                     return false;
                 }
             }
         }
+        FlagBump = false;
+        if ( x < 0 && xSpeed < 0 ) return false;
         return true;
     }
 
