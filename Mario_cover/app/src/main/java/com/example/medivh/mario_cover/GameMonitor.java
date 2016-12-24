@@ -2,6 +2,7 @@ package com.example.medivh.mario_cover;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ConfigurationInfo;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
@@ -16,9 +17,17 @@ import android.widget.Toast;
 public class GameMonitor extends AppCompatActivity {
 
     //  Переменая с областью отрисовки
-    GLSurfaceView glSurfaceView;
+    GLSurfaceView glSurfaceView = null;
+    Renderer ourRender = null;
+    Button ControlButton = null;
     // Флаг событий
-    static int EventIden;
+    int EventIden;
+    // Обработчик событий
+    //eventsHandler GameMaster;
+    eventsHandler handler;
+
+    final int STATUS_NONE = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,9 +42,13 @@ public class GameMonitor extends AppCompatActivity {
         final ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
         final boolean supportsEs2 = configurationInfo.reqGlEsVersion >= 0x20000;
         if (supportsEs2) {
+
+            handler = new eventsHandler(this,(Button) findViewById(R.id.finalbutton));
+            handler.handlerRules.sendEmptyMessage(0);
             // Если прошло проверку на версию то запускаем наш класс отрисовки Renderer()
             glSurfaceView.setEGLContextClientVersion(2);
-            glSurfaceView.setRenderer(new Renderer(this));
+            ourRender = new Renderer(this, handler);
+            glSurfaceView.setRenderer(ourRender);
 
             Display display = getWindowManager().getDefaultDisplay();
             Point size = new Point();
@@ -54,10 +67,10 @@ public class GameMonitor extends AppCompatActivity {
             public boolean onTouch( View b , MotionEvent theMotion ) {
                 switch ( theMotion.getAction() ) {
                     case MotionEvent.ACTION_DOWN:
-                        Renderer.Move();
+                        ourRender.Move();
                         break;
                     case MotionEvent.ACTION_UP:
-                        Renderer.Stop();
+                        ourRender.Stop();
                         break;
                 }
                 return true;
@@ -71,10 +84,10 @@ public class GameMonitor extends AppCompatActivity {
             public boolean onTouch( View b , MotionEvent theMotion ) {
                 switch ( theMotion.getAction() ) {
                     case MotionEvent.ACTION_DOWN:
-                        Renderer.MoveBack();
+                        ourRender.MoveBack();
                         break;
                     case MotionEvent.ACTION_UP:
-                        Renderer.Stop();
+                        ourRender.Stop();
                         break;
                 }
                 return true;
@@ -88,10 +101,10 @@ public class GameMonitor extends AppCompatActivity {
             public boolean onTouch( View b , MotionEvent theMotion ) {
                 switch ( theMotion.getAction() ) {
                     case MotionEvent.ACTION_DOWN:
-                        Renderer.MoveUp();
+                        ourRender.MoveUp();
                         break;
                     case MotionEvent.ACTION_UP:
-                        Renderer.StopUp();
+                        ourRender.StopUp();
                         break;
                 }
                 return true;
@@ -99,14 +112,13 @@ public class GameMonitor extends AppCompatActivity {
         });
     }
 
-    public void getFlags(int flag) {
-
-
-    }
-
 
     public void RestartUp(View view) {
-
+        Intent intent = new Intent(this, GameMonitor.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        ControlButton = (Button) findViewById(R.id.finalbutton);
+        ControlButton.setVisibility(View.INVISIBLE);
     }
 
 

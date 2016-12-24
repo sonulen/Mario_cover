@@ -4,7 +4,6 @@ import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
-import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -22,34 +21,42 @@ import static android.opengl.GLES20.*;
 public class Renderer implements GLSurfaceView.Renderer {
 
 
+    final int STATUS_NONE = 0;
+    final int STATUS_START = 1;
+    final int STATUS_RESTART = 2;
+    final int STATUS_END = 3;
+    final int STATUS_MOVE = 4;
+    final int STATUS_JUMP = 5;
+    final int STATUS_FALL = 6;
+    final int STATUS_BUMP = 7;
 
     private Context context;
     // Создаем матрицу проекций относительно камеры. почему 16?!
     // Создаем матрицу модели
     private float[] mModelMatrix = new float[16];
     // Karta
-    protected static float[] map = {
+    protected float[] map = {
         // где 0 пустота
         0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
     };
 
     // Размеры экрана
-    private static float screenWidth = 2.7f;
-    private static float screenHeight = 1.5f;
-    private static int lengthmap = 0;
-    private static int successSlots = 0;
+    private float screenWidth = 2.7f;
+    private float screenHeight = 1.5f;
+    private int lengthmap = 0;
+    private int successSlots = 0;
     // Создаем переменные для сдвигов
-    private static float x=0;
+    private float x=0;
     private float MarioPositionX = 0;
-    private static float MarioPositionY = 0;
-    private static float xSpeed = (float) 0.00;
-    private static float ySpeed = (float) 0.00;
-    public static float dY = (float) 0.00;
+    private float MarioPositionY = 0;
+    private float xSpeed = (float) 0.00;
+    private float ySpeed = (float) 0.00;
+    public float dY = (float) 0.00;
 //
-    static public int flag;
-    static public int flagUP;
-    static public int endGame = 0;
+    public int flag;
+    public int flagUP;
+    public int endGame = 0;
 
 // NOVOE
     private FloatBuffer marioData;
@@ -65,9 +72,9 @@ public class Renderer implements GLSurfaceView.Renderer {
     private int aTextureLocation;
     private int uTextureUnitLocation;
 
-    private final static int POSITION_COUNT = 3;
-    private static final int TEXTURE_COUNT = 2;
-    private static final int STRIDE = (POSITION_COUNT
+    private final int POSITION_COUNT = 3;
+    private final int TEXTURE_COUNT = 2;
+    private final int STRIDE = (POSITION_COUNT
             + TEXTURE_COUNT) * 4;
 
 
@@ -81,10 +88,11 @@ public class Renderer implements GLSurfaceView.Renderer {
     // Создаем матрицу модели
     private float[] mModelMatrixNEW = new float[16];
 
-
+   public eventsHandler handler;
 //  Передаем контекст, создаем Рендер
-    public Renderer(Context context) {
+    public Renderer(Context context, eventsHandler h1) {
         this.context = context;
+        handler = h1;
     }
 
 //  При создании Surface View ( поверхность отображения ) отчищаем к базовому цвету "Красный"
@@ -100,6 +108,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         // Задаем начальный цвет и очищаем бэкграунд
         GLES20.glClearColor(0f, 1f, 1f, 1.0f);
 //      NOVOE
+        handler.handlerRules.sendEmptyMessage(STATUS_START);
         createAndUseProgram();
         getLocations();
         prepareData();
@@ -108,8 +117,12 @@ public class Renderer implements GLSurfaceView.Renderer {
     }
 
     private void createRandomMap() {
+        for ( int i = 0; i < map.length/2; i++ ) {
+            map [i] = 0;
+            map [i+map.length/2] = 1;
+        }
         Random randNumber = new Random();
-        for ( int i = 0; i < 30; i ++) {
+        for ( int i = 0; i < 60; i ++) {
             int j = randNumber.nextInt(map.length);
             if ( j > 5 && j < (map.length/2 - 5) ) {
                 map [j] = randNumber.nextInt(1);
@@ -152,6 +165,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
 
         glBindTexture(GL_TEXTURE_2D, textureEarth);
+
         for ( int i = 0; i < successSlots; i++ ) {
             glDrawArrays(GL_TRIANGLE_STRIP, (16+(i*4)), 4);
         }
@@ -177,6 +191,7 @@ public class Renderer implements GLSurfaceView.Renderer {
             bindMatrix();
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
+
 
     }
 
@@ -213,8 +228,6 @@ public class Renderer implements GLSurfaceView.Renderer {
     }
 
     private void prepareData() {
-
-
         successSlots = 0;
         for ( int i = 0; i < map.length; i++ )
         {
@@ -356,7 +369,6 @@ public class Renderer implements GLSurfaceView.Renderer {
 
 
     private void MarioMoveWithoutCamera() {
-
         boolean canI = true;
         if ( endGame == 0) {
             changeXspeed(flag);
@@ -376,9 +388,11 @@ public class Renderer implements GLSurfaceView.Renderer {
             x = x + xSpeed;
             MarioPositionX += xSpeed;
             Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
+            handler.handlerRules.sendEmptyMessage(STATUS_FALL);
         }
         if ( endGame == 2){
             // Congrac
+            handler.handlerRules.sendEmptyMessage(STATUS_END);
         }
     }
 
@@ -405,39 +419,42 @@ public class Renderer implements GLSurfaceView.Renderer {
             MarioPositionX += xSpeed;
             Matrix.translateM(mModelMatrixNEW, 0, x, MarioPositionY, 0);
             Matrix.setLookAtM(mViewMatrixNEW, 0, x - (4 * screenWidth / 5), 0, 1.5f, x - (4 * screenWidth / 5), 0, -5.0f, 0, 1, 0);
+            handler.handlerRules.sendEmptyMessage(STATUS_FALL);
         }
         if ( endGame == 2){
-            // Congrac
+            handler.handlerRules.sendEmptyMessage(STATUS_END);
         }
     }
 
-    public void changeXspeed ( int flag ) {
+
+
+    private void changeXspeed ( int flag ) {
 
         if (flag == 1 ) {
-            if (xSpeed < 0.07) xSpeed += 0.01;
+            if (xSpeed < Configuration.xMaxSpeed ) xSpeed += Configuration.xAcceleration;
         }
         if (flag == -1 ) {
-            if (xSpeed > -0.07) xSpeed -= 0.005;
+            if (xSpeed > -Configuration.xMaxSpeed) xSpeed -= Configuration.xAcceleration;
         }
 
         if (flag == 0) {
-            if (xSpeed > 0) xSpeed -= 0.001;
+            if (xSpeed > 0) xSpeed -= Configuration.xBraking;
             if (xSpeed > 0 && xSpeed < 0.001) xSpeed = 0;
             if (xSpeed < 0 && xSpeed > -0.001) xSpeed = 0;
-            if (xSpeed < 0) xSpeed += 0.001;
+            if (xSpeed < 0) xSpeed += Configuration.xBraking;
         }
     }
 
-    public void changeYspeed ( int flagUP ) {
+    private void changeYspeed ( int flagUP ) {
         if ( flagUP == 1) {
-            if (ySpeed == 0) ySpeed = 0.05f;
+            if (ySpeed == 0) ySpeed = Configuration.ySpeedMax;
             if ( (MarioPositionY - dY) >= screenHeight/2)  {
-                ySpeed = -0.05f;
+                ySpeed = Configuration.yGravitation;
                 flagUP = 0;
             }
         }
         if ( flagUP == 0) {
-            if ( ySpeed != 0) ySpeed = -0.05f;
+            if ( ySpeed != 0) ySpeed = Configuration.yGravitation;;
         }
         if ( Math.abs(MarioPositionY - dY) < 0.05f && ySpeed < 0) {
             MarioPositionY = dY;
@@ -445,7 +462,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         }
     }
 
-    public boolean fallingMario () {
+    private boolean fallingMario () {
         float Mariox = MarioPositionX;
 
         int slotx= (int) ((Mariox + screenWidth/10) / (screenWidth/5));;
@@ -454,8 +471,8 @@ public class Renderer implements GLSurfaceView.Renderer {
         int check2 = (int) ((Mariox - screenWidth*1/40 + screenWidth/5) / (screenWidth/5));
 
 
-        Log.d("check1:", Float.toString(check1));
-        Log.d("check2:", Float.toString(check2));
+        //Log.d("check1:", Float.toString(check1));
+        //Log.d("check2:", Float.toString(check2));
         // Было screenHeight/3
         if ( MarioPositionY >= 0 && MarioPositionY < screenHeight/9) {
             level = 1;
@@ -467,11 +484,11 @@ public class Renderer implements GLSurfaceView.Renderer {
             if ( xSpeed >= 0 && map[check1] == 1 ) slotx = check1;
             if ( xSpeed < 0 && map[check2] == 1) slotx = check2;
         }
-        Log.d("slotx:", Float.toString(slotx));
+       // Log.d("slotx:", Float.toString(slotx));
 
         if ( level == 1) {
             if ( map[slotx + map.length/2] == 0 && ySpeed <= 0) {
-                ySpeed = -0.05f;
+                ySpeed = Configuration.yGravitation;
                 xSpeed = 0f;
                 endGame = 1;
                 return false;
@@ -479,7 +496,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         }
         if ( level == 2) {
             if ( map[slotx] == 0 && ySpeed <= 0) {
-                ySpeed = -0.05f;
+                ySpeed = Configuration.yGravitation;;
                 return false;
             }
             if ( map[slotx] == 1 && MarioPositionY >= screenHeight/3 && MarioPositionY <= (screenHeight/3+0.01f) ) {
@@ -487,35 +504,38 @@ public class Renderer implements GLSurfaceView.Renderer {
                 return false;
             }
         }
-        Log.d("ySpeed:", Float.toString(ySpeed));
-        Log.d("xSpeed:", Float.toString(xSpeed));
+        //Log.d("ySpeed:", Float.toString(ySpeed));
+        //Log.d("xSpeed:", Float.toString(xSpeed));
+
         return true;
     }
 
-    static public void Move() {
+    public void Move() {
         flag = 1;
     }
 
-    static public void MoveBack() {
+    public void MoveBack() {
         flag = -1;
     }
-    static public void Stop() {
+    public void Stop() {
         flag = 0;
     }
 
 
 
 
-    public static void MoveUp() {
+    public void MoveUp() {
         if ( flagUP == 0 && ySpeed == 0 && (MarioPositionY - dY) < 0.01f) dY = MarioPositionY;
         flagUP = 1;
+        handler.handlerRules.sendEmptyMessage(STATUS_JUMP);
+
     }
 
-    public static void StopUp() {
+    public void StopUp() {
             flagUP = 0;
     }
 
-    static boolean canIMoveX (float Mariox) {
+    private boolean canIMoveX (float Mariox) {
         if ( xSpeed < 0) Mariox = Mariox + screenWidth/6;
         int slotx= 0;
         int level = 0;
@@ -533,21 +553,18 @@ public class Renderer implements GLSurfaceView.Renderer {
 
         if ( level == 1) {
             if ( map[slotx+1] == 1 && xSpeed >= 0) {
+                handler.handlerRules.sendEmptyMessage(STATUS_BUMP);
                 return false;
             }
             if ( slotx > 0) {
                 if (map[slotx - 1] == 1 && xSpeed <= 0) {
+                    handler.handlerRules.sendEmptyMessage(STATUS_BUMP);
                     return false;
                 }
             }
         }
-
-
         return true;
     }
-
-
-
 
 
 }
