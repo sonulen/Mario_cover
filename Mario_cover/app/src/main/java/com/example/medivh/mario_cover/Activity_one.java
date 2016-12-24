@@ -1,35 +1,58 @@
 package com.example.medivh.mario_cover;
 
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.pm.ConfigurationInfo;
-import android.opengl.GLSurfaceView;
-import android.support.v7.app.AppCompatActivity;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.Gravity;
+import android.view.View;
 import android.widget.Toast;
 
 public class Activity_one extends AppCompatActivity {
 
-//  Переменая с областью отрисовки
-    private GLSurfaceView glSurfaceView;
+
 //  Флажок
     private boolean rendererSet = false;
+    // Для сетевого взаимодействия
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Получаем область
-        glSurfaceView = new GLSurfaceView(this);
-        // Проверяем поддерживается ли OpenGL ES 2.0.
-        final ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        final ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
-        final boolean supportsEs2 = configurationInfo.reqGlEsVersion >= 0x20000;
-        if (supportsEs2) {
-        // Если прошло проверку на версию то запускаем наш класс отрисовки Renderer()
-            glSurfaceView.setRenderer(new Renderer()); rendererSet = true;
-        } else {
-            Toast.makeText(this, "This device does not support OpenGL ES 2.0.", Toast.LENGTH_LONG).show(); return;
+        // Убираем полосу названия приложения
+        getSupportActionBar().hide();
+        // Проверка ориентации и задание горизонтальной ориентации
+        Configuration configuration = getResources().getConfiguration();
+        if(configuration.orientation == Configuration.ORIENTATION_PORTRAIT){
+            Toast toast = Toast.makeText(getApplicationContext(),
+                    "Делай переварот мэн",
+                    Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER, 0, 0);
+            toast.show();
+            setRequestedOrientation (ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
-        setContentView(glSurfaceView);
+        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE){
+            setRequestedOrientation (ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        //https://vk.com/doc18053558_440093360 - 2 файл с авторами
+        new ReadInBackground("https://vk.com/doc18053558_440093360").execute();
+
+        setContentView(R.layout.activity_one_land);
     }
+
+    public void startgame(View view) {
+
+        Intent intent = new Intent(this, GameMonitor.class);
+        startActivity(intent);
+
+    }
+
+    public void Info(View view) {
+        String info = "";
+        info = ReadInBackground.getInfo();
+        Toast.makeText(getApplicationContext(), info, Toast.LENGTH_SHORT).show();
+    }
+
 }
